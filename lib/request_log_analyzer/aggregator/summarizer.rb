@@ -110,6 +110,7 @@ module RequestLogAnalyzer::Aggregator
         output.table({:width => 20}, {:font => :bold}) do |rows|
           rows << ['Parsed lines:',    source.parsed_lines]
           rows << ['Skipped lines:',   source.skipped_lines]
+          rows << ['% Skipped:',   ( "%.3f" % (source.skipped_lines / source.parsed_lines.to_f))]
           rows << ['Parsed requests:', source.parsed_requests]
           rows << ['Skipped requests:', source.skipped_requests]
           rows << ["Warnings:", @warnings_encountered.map { |(key, value)| "#{key}: #{value}" }.join(', ')] if has_warnings?
