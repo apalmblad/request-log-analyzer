@@ -24,6 +24,14 @@ request-log-analyzer like this:
 
 For more details, other file formats, and available command line options, see the project's wiki at http://github.com/wvanbergen/request-log-analyzer/wiki
 
+== Changes in this fork
+
+I've added support for tracking the requests keyed on PID, which cuts way down on the number of unparsed rows due to requests being loggedout of order.  I've added a Syslog module that decorates the other file formats with syslog regexps and captures, to pull out PID in many more ccases.
+
+However, I was unable to get the decoration working with unioned RegExps, so this release only supports Rails 2.2 format logs.
+
+Feel free to email me at adam.palmblad@teampages.com for details.  Thanks to TeamPages.com (http://www.teampages.com) for allowing the release of this.
+
 == Additional information
 
 Request-log-analyzer was designed and built by Willem van Bergen and Bart ten
