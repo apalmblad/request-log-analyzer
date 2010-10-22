@@ -13,6 +13,7 @@ module RequestLogAnalyzer::FileFormat
   autoload :DelayedJob21,     'request_log_analyzer/file_format/delayed_job21'
   autoload :Apache,           'request_log_analyzer/file_format/apache'
   autoload :AmazonS3,         'request_log_analyzer/file_format/amazon_s3'
+  autoload :Syslog,            'request_log_analyzer/file_format/syslog'
 
   # Loads a FileFormat::Base subclass instance.
   # You can provide:
@@ -50,7 +51,13 @@ module RequestLogAnalyzer::FileFormat
 
     # check the returned klass to see if it can be used
     raise "Could not load a file format from #{file_format.inspect}" if klass.nil?
-    raise "Invalid FileFormat class from #{file_format.inspect}" unless klass.kind_of?(Class) && klass.ancestors.include?(RequestLogAnalyzer::FileFormat::Base)
+    unless klass.kind_of?(Class) && klass.ancestors.include?(RequestLogAnalyzer::FileFormat::Base)
+      if klass.is_a?( Class )
+        raise "Invalid FileFormat class (#{klass.name}) from #{file_format.inspect}" 
+      else
+        return @current_file_format = klass.get_instances( *args )
+      end
+    end
 
     @current_file_format = klass.create(*args) # return an instance of the class
   end
@@ -60,6 +67,7 @@ module RequestLogAnalyzer::FileFormat
     @all_formats ||= Dir[File.expand_path('file_format/*.rb', File.dirname(__FILE__))].map do |file| 
       self.load(File.basename(file, '.rb')) 
     end
+    @all_formats.flatten!
   end
   
   # Autodetects the filetype of a given file.
@@ -99,6 +107,7 @@ module RequestLogAnalyzer::FileFormat
 
     # As Apache matches several simular formats, subtracting 1 will make a specific matcher have a higher score
     score -= 1 if parser.file_format.class == RequestLogAnalyzer::FileFormat::Apache
+    score += 2 if parser.file_format.is_syslog?
 
     score
   end
@@ -213,6 +222,10 @@ module RequestLogAnalyzer::FileFormat
     # Specifies a single line defintions.
     def self.line_definition(name, &block)
       @line_definer.define_line(name, &block)
+    end
+
+    def is_syslog?
+      return false
     end
 
     # Specifies multiple line definitions at once using a block
