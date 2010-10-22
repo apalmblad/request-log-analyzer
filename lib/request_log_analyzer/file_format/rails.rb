@@ -99,11 +99,7 @@ module RequestLogAnalyzer::FileFormat
       :completed => RequestLogAnalyzer::LineDefinition.new(:completed, :footer => true,
             :teaser   => /Completed in /,
             :regexp   => RAILS_22_COMPLETED,
-            :captures => [{ :name => :duration, :type => :duration, :unit => :sec },   # First old variant capture
-                          { :name => :view,     :type => :duration, :unit => :sec },
-                          { :name => :db,       :type => :duration, :unit => :sec },
-                          { :name => :status,   :type => :integer },
-                          { :name => :url,      :type => :string },                    # Last old variant capture
+            :captures => [
                           { :name => :duration, :type => :duration, :unit => :msec },  # First new variant capture
                           { :name => :view,     :type => :duration, :unit => :msec },
                           { :name => :db,       :type => :duration, :unit => :msec },
