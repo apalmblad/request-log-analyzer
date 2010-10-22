@@ -78,7 +78,7 @@ module RequestLogAnalyzer::FileFormat
 
     # Rails < 2.1 completed line example
     # Completed in 0.21665 (4 reqs/sec) | Rendering: 0.00926 (4%) | DB: 0.00000 (0%) | 200 OK [http://demo.nu/employees]
-    RAILS_21_COMPLETED = /Completed in (\d+\.\d{5}) \(\d+ reqs\/sec\) (?:\| Rendering: (\d+\.\d{5}) \(\d+\%\) )?(?:\| DB: (\d+\.\d{5}) \(\d+\%\) )?\| (\d\d\d).+\[(http.+)\]/
+#    RAILS_21_COMPLETED = /Completed in (\d+\.\d{5}) \(\d+ reqs\/sec\) (?:\| Rendering: (\d+\.\d{5}) \(\d+\%\) )?(?:\| DB: (\d+\.\d{5}) \(\d+\%\) )?\| (\d\d\d).+\[(http.+)\]/
 
     # Rails > 2.1 completed line example
     # Completed in 614ms (View: 120, DB: 31) | 200 OK [http://floorplanner.local/demo]
@@ -98,7 +98,7 @@ module RequestLogAnalyzer::FileFormat
 
       :completed => RequestLogAnalyzer::LineDefinition.new(:completed, :footer => true,
             :teaser   => /Completed in /,
-            :regexp   => Regexp.union(RAILS_21_COMPLETED, RAILS_22_COMPLETED),
+            :regexp   => RAILS_22_COMPLETED,
             :captures => [{ :name => :duration, :type => :duration, :unit => :sec },   # First old variant capture
                           { :name => :view,     :type => :duration, :unit => :sec },
                           { :name => :db,       :type => :duration, :unit => :sec },

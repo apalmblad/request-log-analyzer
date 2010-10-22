@@ -1,29 +1,6 @@
 class RequestLogAnalyzer::FileFormat::Oink < RequestLogAnalyzer::FileFormat::Rails
-  # capture the PID
-  HODEL3000_PROCESSING = /\[(\d+)\]: Processing ((?:\w+::)*\w+)#(\w+)(?: to (\w+))? \(for (#{ip_address}) at (#{timestamp('%Y-%m-%d %H:%M:%S')})\) \[([A-Z]+)\]/
-  
-  # TODO: fix me!
-  line_definition :processing do |line|
-    line.header = true
-    line.regexp = Regexp.union(LINE_DEFINITIONS[:processing].regexp,HODEL3000_PROCESSING)
-    line.captures = [   { :name => :controller, :type  => :string }, # Default Rails Processing
-                        { :name => :action,     :type  => :string },
-                        { :name => :format,     :type  => :string, :default => 'html' },
-                        { :name => :ip,         :type  => :string },
-                        { :name => :timestamp,  :type  => :timestamp },
-                        { :name => :method,     :type  => :string },
-                        { :name => :pid,        :type  => :integer }, # Hodel 3000 Processing w/PID
-                        { :name => :controller, :type  => :string },
-                        { :name => :action,     :type  => :string },
-                        { :name => :format,     :type  => :string, :default => 'html' },
-                        { :name => :ip,         :type  => :string },
-                        { :name => :timestamp,  :type  => :timestamp },
-                        { :name => :method,     :type  => :string }]
-  end
-  
   line_definition :memory_usage do |line|
-    line.regexp   = /\[(\d+)\]: Memory usage: (\d+)/
-    line.capture(:pid).as(:integer)
+    line.regexp   = /Memory usage: (\d+)/
     line.capture(:memory).as(:traffic)
   end
   
