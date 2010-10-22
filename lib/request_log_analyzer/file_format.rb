@@ -87,7 +87,6 @@ module RequestLogAnalyzer::FileFormat
         parsers.each { |parser| parser.parse_line(line) } 
       end
     end
-    
     parsers.select { |p| autodetect_score(p) > 0 }.max { |a, b| autodetect_score(a) <=> autodetect_score(b) }.file_format rescue nil
   end
   
@@ -99,6 +98,7 @@ module RequestLogAnalyzer::FileFormat
   #
   # <tt>parser</tt>:: The parsed that was use to parse the initial lines of the log file.
   def self.autodetect_score(parser)
+  
     score  = 0
     score -= parser.file_format.line_definitions.length
     score -= parser.warnings * 3
@@ -110,6 +110,14 @@ module RequestLogAnalyzer::FileFormat
     score += 2 if parser.file_format.is_syslog?
 
     score
+  end
+  def self.debug_autodetect_score( parsers )
+    parsers.each do |parser|
+      score = autodetect_score( parser )
+      puts "Score for %s: %d defs, %d warnings, %d lines parsed, %d parsed requests, score %d" % 
+          [parser.file_format.class.name, parser.file_format.line_definitions.length,
+            parser.warnings, parser.parsed_lines, parser.parsed_requests, score]
+    end
   end
 
   # This module contains some methods to construct regular expressions for log fragments
