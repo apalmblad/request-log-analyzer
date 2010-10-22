@@ -21,6 +21,7 @@ module RequestLogAnalyzer::Source
 
     attr_reader :source_files, :current_file, :current_lineno
     attr_reader :warnings, :parsed_lines, :parsed_requests, :skipped_lines, :skipped_requests
+    attr_reader :warning_types
 
     # Initializes the log file parser instance.
     # It will apply the language specific FileFormat module to this instance. It will use the line
@@ -31,11 +32,12 @@ module RequestLogAnalyzer::Source
     def initialize(format, options = {})
       super(format, options)
       @warnings         = 0
+      @warning_types = {}
       @parsed_lines     = 0
       @parsed_requests  = 0
       @skipped_lines    = 0
       @skipped_requests = 0
-      @current_request  = nil
+      @current_requests  = {}
       @current_source   = nil
       @current_file     = nil
       @current_lineno   = nil
@@ -153,7 +155,7 @@ module RequestLogAnalyzer::Source
         parse_line(line, &block)
       end
 
-      warn(:unfinished_request_on_eof, "End of file reached, but last request was not completed!") unless @current_request.nil?
+      warn(:unfinished_request_on_eof, "End of file reached, but last request was not completed!") unless @current_requests.keys.empty?
       @current_lineno = nil
     end
     
@@ -197,6 +199,9 @@ module RequestLogAnalyzer::Source
     # <tt>message</tt>:: A message explaining the warning
     def warn(type, message)
       @warnings += 1
+      @warning_types[type] ||= []
+      @warning_types[type] << message
+      #puts "warning of type #{type}"
       @warning_handler.call(type, message, @current_lineno) if @warning_handler
     end
 
@@ -225,38 +230,50 @@ module RequestLogAnalyzer::Source
     #
     # <tt>request_data</tt>:: A hash of data that was parsed from the last line.
     def update_current_request(request_data, &block) # :yields: request
-      if alternative_header_line?(request_data)
-        if @current_request
-          @current_request << request_data
+      found_pid = nil
+      if request_data[:line_definition].captures?( :pid )
+        if @file_format.request(request_data)[:pid]
+          found_pid = @file_format.request(request_data)[:pid].to_i
         else
-          @current_request = @file_format.request(request_data)
+          raise 'bah'
+          found_pid = -1
+          warn(:pid_problem, "A PID could not be parsed: (#{request_data[:source]} - #{request_data[:lineno]} - #{request_data.keys.inspect})")
+        end
+      else
+        found_pid = -1
+      end
+      if alternative_header_line?(request_data)
+        if @current_requests[found_pid]
+          @current_requests[found_pid] << request_data
+        else
+          @current_requests[found_pid] = @file_format.request(request_data)
         end
       elsif header_line?(request_data)
-        if @current_request
+        if @current_requests[found_pid]
           case options[:parse_strategy]
           when 'assume-correct'
-            handle_request(@current_request, &block)
-            @current_request = @file_format.request(request_data)
+            handle_request(@current_requests[found_pid], &block)
+            @current_requests[found_pid] = @file_format.request(request_data)
           when 'cautious'
             @skipped_lines += 1
             warn(:unclosed_request, "Encountered header line (#{request_data[:line_definition].name.inspect}), but previous request was not closed!")
-            @current_request = nil # remove all data that was parsed, skip next request as well.
+            @current_requests.delete( found_pid ) # remove all data that was parsed, skip next request as well.
           end
         elsif footer_line?(request_data)
           handle_request(@file_format.request(request_data), &block)
         else
-          @current_request = @file_format.request(request_data)
+          @current_requests[found_pid] = @file_format.request(request_data)
         end
       else
-        if @current_request
-          @current_request << request_data
+        if @current_requests[found_pid]
+          @current_requests[found_pid] << request_data
           if footer_line?(request_data)
-            handle_request(@current_request, &block) # yield @current_request
-            @current_request = nil
+            handle_request(@current_requests[found_pid], &block) # yield @current_request
+            @current_requests.delete( found_pid )
           end
         else
           @skipped_lines += 1
-          warn(:no_current_request, "Parsebale line (#{request_data[:line_definition].name.inspect}) found outside of a request!")
+          warn(:no_current_request, "Parseable line (#{request_data[:line_definition].name.inspect}) found outside of a request!")
         end
       end
     end
